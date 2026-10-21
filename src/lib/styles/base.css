@@ -38,6 +38,25 @@
   --duration-base: 220ms;
 }
 
+:root[data-theme='dark'] {
+  --bg: #0b1020;
+  --bg-elevated: #141b2d;
+  --card: #121a2a;
+  --card-muted: #171f2f;
+  --panel: rgba(18, 26, 42, 0.8);
+  --text: #edf3ff;
+  --text-soft: #b8c3d9;
+  --line: rgba(196, 206, 228, 0.18);
+  --line-strong: rgba(196, 206, 228, 0.24);
+  --accent: #f4c542;
+  --accent-ink: #20180a;
+  --accent-soft: rgba(244, 197, 66, 0.18);
+  --select: #8ab4ff;
+  --select-soft: rgba(138, 180, 255, 0.12);
+  --shadow-1: 0 1px 2px rgba(2, 6, 23, 0.52);
+  --shadow-2: 0 18px 34px rgba(2, 6, 23, 0.68);
+}
+
 :root {
   color: var(--text);
   background: var(--bg);

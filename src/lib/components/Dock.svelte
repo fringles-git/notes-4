@@ -1,11 +1,33 @@
 <script lang="ts">
   import '$lib/styles/base.css';
+  import { onMount } from 'svelte';
   import Button from '$lib/components/Button.svelte';
   import Dock from '$lib/components/Dock.svelte';
   import NoteCard from '$lib/components/NoteCard.svelte';
   import { addNote, deleteNote, notes, sortNotes, togglePin, updateNote, type Note } from '$lib/stores/notes';
 
+  type View = 'notes' | 'library' | 'search' | 'settings';
+
+  let activeView: View = 'notes';
   let selectedId: string | null = 'note-1';
+  let search = '';
+  let darkMode = false;
+
+  function applyTheme(): void {
+    const root = document.documentElement;
+    root.dataset.theme = darkMode ? 'dark' : 'light';
+    localStorage.setItem('notes-theme', darkMode ? 'dark' : 'light');
+  }
+
+  onMount(() => {
+    const saved = localStorage.getItem('notes-theme');
+    darkMode = saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    applyTheme();
+  });
+
+  $: if (typeof document !== 'undefined') {
+    applyTheme();
+  }
 
   function makeFreshNote(): void {
     const created = addNote({
@@ -14,6 +36,7 @@
       folder: 'Boîte de réception'
     });
     selectedId = created.id;
+    activeView = 'notes';
   }
 
   function updateSelectedNote(field: 'title' | 'body', value: string): void {
@@ -26,10 +49,11 @@
     selectedId = orderedNotes[0]?.id ?? null;
   }
   $: selectedNote = orderedNotes.find((note) => note.id === selectedId) ?? orderedNotes[0] ?? null;
-
-  function selectNote(note: Note): void {
-    selectedId = note.id;
-  }
+  $: filteredNotes = orderedNotes.filter((note) => {
+    const haystack = `${note.title} ${note.body} ${note.folder}`.toLowerCase();
+    return haystack.includes(search.toLowerCase());
+  });
+  $: libraryFolders = Array.from(new Set(orderedNotes.map((note) => note.folder)));
 </script>
 
 <svelte:head>
@@ -42,55 +66,127 @@
       <p class="eyebrow">Notes</p>
       <h1>Notes</h1>
     </div>
-    <Button variant="primary" on:click={makeFreshNote}>Nouveau</Button>
+
+    <div class="header-actions">
+      <Button variant="ghost" compact on:click={() => (darkMode = !darkMode)}>
+        {darkMode ? 'Clair' : 'Sombre'}
+      </Button>
+      <Button variant="primary" on:click={makeFreshNote}>Nouveau</Button>
+    </div>
   </header>
 
   <main class="layout">
-    <section class="list-panel">
-      <div class="panel-head">
-        <span>Aujourd’hui</span>
-        <span>{orderedNotes.length} notes</span>
-      </div>
-
-      <div class="notes-grid">
-        {#each orderedNotes as note}
-          <button class="card-button" type="button" on:click={() => selectNote(note)}>
-            <NoteCard note={note} selected={selectedNote?.id === note.id} />
-          </button>
-        {/each}
-      </div>
-    </section>
-
-    <aside class="editor-panel">
-      {#if selectedNote}
-        <div class="editor-head">
-          <span class="folder-badge">{selectedNote.folder}</span>
-          <div class="inline-actions">
-            <Button variant="ghost" compact on:click={() => togglePin(selectedNote.id)}>
-              {selectedNote.pinned ? 'Désépingler' : 'Épingler'}
-            </Button>
-            <Button variant="danger" compact on:click={() => deleteNote(selectedNote.id)}>Supprimer</Button>
-          </div>
+    {#if activeView === 'notes'}
+      <section class="list-panel">
+        <div class="panel-head">
+          <span>Aujourd’hui</span>
+          <span>{orderedNotes.length} notes</span>
         </div>
 
-        <input
-          class="title-input"
-          value={selectedNote.title}
-          aria-label="Titre de la note"
-          on:input={(event) => updateSelectedNote('title', event.currentTarget.value)}
-        />
+        <div class="notes-grid">
+          {#each orderedNotes as note}
+            <button class="card-button" type="button" on:click={() => (selectedId = note.id)}>
+              <NoteCard note={note} selected={selectedNote?.id === note.id} />
+            </button>
+          {/each}
+        </div>
+      </section>
 
-        <textarea
-          class="body-input"
-          aria-label="Contenu de la note"
-          value={selectedNote.body}
-          on:input={(event) => updateSelectedNote('body', event.currentTarget.value)}
-        ></textarea>
-      {/if}
-    </aside>
+      <aside class="editor-panel">
+        {#if selectedNote}
+          <div class="editor-head">
+            <span class="folder-badge">{selectedNote.folder}</span>
+            <div class="inline-actions">
+              <Button variant="ghost" compact on:click={() => togglePin(selectedNote.id)}>
+                {selectedNote.pinned ? 'Désépingler' : 'Épingler'}
+              </Button>
+              <Button variant="danger" compact on:click={() => deleteNote(selectedNote.id)}>Supprimer</Button>
+            </div>
+          </div>
+
+          <input
+            class="title-input"
+            value={selectedNote.title}
+            aria-label="Titre de la note"
+            on:input={(event) => updateSelectedNote('title', event.currentTarget.value)}
+          />
+
+          <textarea
+            class="body-input"
+            aria-label="Contenu de la note"
+            value={selectedNote.body}
+            on:input={(event) => updateSelectedNote('body', event.currentTarget.value)}
+          ></textarea>
+        {/if}
+      </aside>
+    {:else if activeView === 'library'}
+      <section class="list-panel full-panel">
+        <div class="panel-head">
+          <span>Bibliothèque</span>
+          <span>{libraryFolders.length} dossiers</span>
+        </div>
+
+        <div class="folder-grid">
+          {#each libraryFolders as folder}
+            <div class="folder-card">
+              <span class="folder-dot"></span>
+              <div>
+                <strong>{folder}</strong>
+                <small>{orderedNotes.filter((note) => note.folder === folder).length} notes</small>
+              </div>
+            </div>
+          {/each}
+        </div>
+      </section>
+    {:else if activeView === 'search'}
+      <section class="list-panel full-panel">
+        <div class="panel-head search-row">
+          <span>Recherche</span>
+          <span>{filteredNotes.length} résultats</span>
+        </div>
+
+        <label class="search-box">
+          <span>Rechercher</span>
+          <input bind:value={search} placeholder="Rechercher dans Notes" />
+        </label>
+
+        <div class="search-results">
+          {#each filteredNotes as note}
+            <button type="button" class="search-result" on:click={() => { selectedId = note.id; activeView = 'notes'; }}>
+              <strong>{note.title}</strong>
+              <small>{note.folder}</small>
+            </button>
+          {/each}
+        </div>
+      </section>
+    {:else}
+      <section class="settings-panel full-panel">
+        <div class="panel-head">
+          <span>Réglages</span>
+          <span>App</span>
+        </div>
+
+        <div class="settings-list">
+          <button type="button" class="settings-item" on:click={() => (darkMode = !darkMode)}>
+            <span>Thème</span>
+            <strong>{darkMode ? 'Sombre' : 'Clair'}</strong>
+          </button>
+
+          <div class="settings-item disabled">
+            <span>Langue</span>
+            <strong>Français</strong>
+          </div>
+
+          <div class="settings-item disabled">
+            <span>Version</span>
+            <strong>26.10.19.8</strong>
+          </div>
+        </div>
+      </section>
+    {/if}
   </main>
 
-  <Dock active="notes" />
+  <Dock active={activeView} on:select={(event) => (activeView = event.detail.id)} />
 </div>
 
 <style>
@@ -106,6 +202,12 @@
     justify-content: space-between;
     gap: 16px;
     margin-bottom: 16px;
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
 
   .eyebrow {
@@ -131,7 +233,8 @@
   }
 
   .list-panel,
-  .editor-panel {
+  .editor-panel,
+  .settings-panel {
     background: var(--panel);
     border: 1px solid var(--line);
     border-radius: 28px;
@@ -139,8 +242,13 @@
     backdrop-filter: blur(18px);
   }
 
-  .list-panel {
+  .list-panel,
+  .settings-panel {
     padding: 18px;
+  }
+
+  .full-panel {
+    min-height: 420px;
   }
 
   .panel-head {
@@ -151,6 +259,10 @@
     font-size: 0.82rem;
     color: var(--text-soft);
     font-weight: 700;
+  }
+
+  .search-row {
+    margin-bottom: 12px;
   }
 
   .notes-grid {
@@ -202,7 +314,8 @@
   }
 
   .title-input,
-  .body-input {
+  .body-input,
+  .search-box input {
     width: 100%;
     border: 1px solid var(--line);
     border-radius: 18px;
@@ -225,6 +338,78 @@
     line-height: 1.6;
   }
 
+  .folder-grid,
+  .settings-list,
+  .search-results {
+    display: grid;
+    gap: 12px;
+  }
+
+  .folder-card,
+  .settings-item,
+  .search-result {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: rgba(255, 255, 255, 0.26);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 12px 14px;
+    color: var(--text);
+  }
+
+  .folder-card {
+    justify-content: flex-start;
+  }
+
+  .folder-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 0 6px rgba(244, 197, 66, 0.2);
+  }
+
+  .folder-card strong,
+  .search-result strong,
+  .settings-item strong {
+    display: block;
+    font-size: 0.96rem;
+  }
+
+  .folder-card small,
+  .search-result small {
+    display: block;
+    color: var(--text-soft);
+  }
+
+  .search-box {
+    display: grid;
+    gap: 8px;
+    margin-bottom: 14px;
+    color: var(--text-soft);
+    font-size: 0.85rem;
+    font-weight: 700;
+  }
+
+  .search-result {
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .settings-item {
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .settings-item.disabled {
+    opacity: 0.7;
+    cursor: default;
+  }
+
   @media (min-width: 900px) {
     .app-shell {
       padding-top: 32px;
@@ -233,6 +418,10 @@
     .layout {
       grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
       gap: 20px;
+    }
+
+    .full-panel {
+      grid-column: 1 / -1;
     }
   }
 </style>
