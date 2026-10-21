@@ -1,86 +1,238 @@
 <script lang="ts">
-  export let active: 'notes' | 'library' | 'search' | 'settings' = 'notes';
+  import '$lib/styles/base.css';
+  import Button from '$lib/components/Button.svelte';
+  import Dock from '$lib/components/Dock.svelte';
+  import NoteCard from '$lib/components/NoteCard.svelte';
+  import { addNote, deleteNote, notes, sortNotes, togglePin, updateNote, type Note } from '$lib/stores/notes';
 
-  const items = [
-    { id: 'notes', label: 'Notes' },
-    { id: 'library', label: 'Library' },
-    { id: 'search', label: 'Search' },
-    { id: 'settings', label: 'Settings' }
-  ] as const;
+  let selectedId: string | null = 'note-1';
+
+  function makeFreshNote(): void {
+    const created = addNote({
+      title: 'Nouvelle note',
+      body: 'Le système est unique. Les composants partagent les mêmes primitives.',
+      folder: 'Boîte de réception'
+    });
+    selectedId = created.id;
+  }
+
+  function updateSelectedNote(field: 'title' | 'body', value: string): void {
+    if (!selectedId) return;
+    updateNote(selectedId, { [field]: value });
+  }
+
+  $: orderedNotes = sortNotes($notes);
+  $: if (selectedId && !orderedNotes.some((note) => note.id === selectedId)) {
+    selectedId = orderedNotes[0]?.id ?? null;
+  }
+  $: selectedNote = orderedNotes.find((note) => note.id === selectedId) ?? orderedNotes[0] ?? null;
+
+  function selectNote(note: Note): void {
+    selectedId = note.id;
+  }
 </script>
 
-<nav class="dock" aria-label="Main navigation">
-  <div class="dock-shell">
-    {#each items as item}
-      <button class:active={active === item.id} class="dock-item" type="button">
-        <span>{item.label}</span>
-      </button>
-    {/each}
-  </div>
-  <button class="fab" type="button" aria-label="Create note">+</button>
-</nav>
+<svelte:head>
+  <title>Notes</title>
+</svelte:head>
+
+<div class="app-shell">
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">Notes</p>
+      <h1>Notes</h1>
+    </div>
+    <Button variant="primary" on:click={makeFreshNote}>Nouveau</Button>
+  </header>
+
+  <main class="layout">
+    <section class="list-panel">
+      <div class="panel-head">
+        <span>Aujourd’hui</span>
+        <span>{orderedNotes.length} notes</span>
+      </div>
+
+      <div class="notes-grid">
+        {#each orderedNotes as note}
+          <button class="card-button" type="button" on:click={() => selectNote(note)}>
+            <NoteCard note={note} selected={selectedNote?.id === note.id} />
+          </button>
+        {/each}
+      </div>
+    </section>
+
+    <aside class="editor-panel">
+      {#if selectedNote}
+        <div class="editor-head">
+          <span class="folder-badge">{selectedNote.folder}</span>
+          <div class="inline-actions">
+            <Button variant="ghost" compact on:click={() => togglePin(selectedNote.id)}>
+              {selectedNote.pinned ? 'Désépingler' : 'Épingler'}
+            </Button>
+            <Button variant="danger" compact on:click={() => deleteNote(selectedNote.id)}>Supprimer</Button>
+          </div>
+        </div>
+
+        <input
+          class="title-input"
+          value={selectedNote.title}
+          aria-label="Titre de la note"
+          on:input={(event) => updateSelectedNote('title', event.currentTarget.value)}
+        />
+
+        <textarea
+          class="body-input"
+          aria-label="Contenu de la note"
+          value={selectedNote.body}
+          on:input={(event) => updateSelectedNote('body', event.currentTarget.value)}
+        ></textarea>
+      {/if}
+    </aside>
+  </main>
+
+  <Dock active="notes" />
+</div>
 
 <style>
-  .dock {
-    position: fixed;
-    left: 50%;
-    bottom: max(16px, env(safe-area-inset-bottom));
-    transform: translateX(-50%);
-    z-index: 20;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    width: min(92vw, 560px);
-    pointer-events: none;
+  .app-shell {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 24px 16px 120px;
   }
 
-  .dock-shell,
-  .fab {
-    pointer-events: auto;
-  }
-
-  .dock-shell {
+  .topbar {
     display: flex;
     align-items: center;
-    flex: 1;
-    min-width: 0;
-    padding: 4px;
-    border-radius: var(--radius-lg);
-    background: rgba(255, 255, 255, 0.55);
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  .eyebrow {
+    margin: 0 0 6px;
+    color: var(--text-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: 0.7rem;
+    font-weight: 800;
+  }
+
+  h1 {
+    margin: 0;
+    font-size: clamp(2rem, 6vw, 3.5rem);
+    letter-spacing: -0.05em;
+    font-weight: 800;
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .list-panel,
+  .editor-panel {
+    background: var(--panel);
     border: 1px solid var(--line);
+    border-radius: 28px;
     box-shadow: var(--shadow-1);
     backdrop-filter: blur(18px);
   }
 
-  .dock-item {
-    flex: 1 1 0;
-    min-width: 0;
-    height: var(--dock-height);
-    border-radius: var(--radius-sm);
+  .list-panel {
+    padding: 18px;
+  }
+
+  .panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+    font-size: 0.82rem;
     color: var(--text-soft);
     font-weight: 700;
-    background: transparent;
-    transition: background var(--duration-base) var(--ease), color var(--duration-base) var(--ease);
-    cursor: pointer;
   }
 
-  .dock-item.active {
-    background: var(--bg-elevated);
-    color: var(--text);
-    box-shadow: var(--shadow-1);
-  }
-
-  .fab {
+  .notes-grid {
     display: grid;
-    place-items: center;
-    width: var(--fab-size);
-    height: var(--fab-size);
-    border-radius: var(--radius-lg);
-    background: var(--accent);
-    color: var(--accent-ink);
-    font-size: 2rem;
-    font-weight: 700;
-    box-shadow: var(--shadow-2);
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+  }
+
+  .card-button {
+    width: 100%;
+    text-align: left;
     cursor: pointer;
+    border: 0;
+    background: transparent;
+    padding: 0;
+  }
+
+  .editor-panel {
+    padding: 18px;
+    min-height: 480px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .editor-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .folder-badge {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    color: var(--text-soft);
+    background: rgba(255, 255, 255, 0.25);
+  }
+
+  .inline-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .title-input,
+  .body-input {
+    width: 100%;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.42);
+    color: var(--text);
+    padding: 14px 16px;
+  }
+
+  .title-input {
+    font-size: clamp(1.5rem, 4vw, 2.6rem);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.04em;
+  }
+
+  .body-input {
+    flex: 1;
+    min-height: 300px;
+    resize: vertical;
+    line-height: 1.6;
+  }
+
+  @media (min-width: 900px) {
+    .app-shell {
+      padding-top: 32px;
+    }
+
+    .layout {
+      grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
+      gap: 20px;
+    }
   }
 </style>
