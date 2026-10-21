@@ -15,6 +15,10 @@
   function handleSelect(itemId: (typeof items)[number]['id']): void {
     dispatch('select', { id: itemId });
   }
+
+  function handleCreate(): void {
+    dispatch('create');
+  }
 </script>
 
 <nav class="dock" aria-label="Navigation principale">
@@ -31,7 +35,7 @@
       </button>
     {/each}
   </div>
-  <button class="fab" type="button" aria-label="Créer une note">+</button>
+  <button class="fab" type="button" aria-label="Créer une note" on:click={handleCreate}>+</button>
 </nav>
 
 <style>

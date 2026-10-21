@@ -1,43 +1,18 @@
-@import '$lib/styles/tokens.css';
-
-:root {
-  color-scheme: light;
-}
-
-html {
-  background: var(--bg);
-}
-
-body {
-  margin: 0;
-  background:
-    radial-gradient(circle at top left, rgba(244, 197, 66, 0.14), transparent 26%),
-    linear-gradient(180deg, #f8f9fb 0%, var(--bg) 100%);
-}
-
-* {
-  box-sizing: border-box;
-}
-
-button,
-input,
-textarea {
-  font: inherit;
-  color: inherit;
-}
-
-button {
-  border: 0;
-  background: none;
-  padding: 0;
-}
-
-img {
-  max-width: 100%;
-  display: block;
-}
-
-:focus-visible {
-  outline: 2px solid var(--select);
-  outline-offset: 2px;
-}
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#f4c542" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Notes" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/icon.svg" />
+    %sveltekit.head%
+  </head>
+  <body data-sveltekit-preload-data="hover">
+    <div style="display: contents">%sveltekit.body%</div>
+  </body>
+</html>

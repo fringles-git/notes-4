@@ -12,10 +12,13 @@
   let selectedId: string | null = 'note-1';
   let search = '';
   let darkMode = false;
+  let selectedNote: Note | null = null;
+  let libraryFolders: string[] = [];
+  let filteredNotes: Note[] = [];
 
   function applyTheme(): void {
-    const root = document.documentElement;
-    root.dataset.theme = darkMode ? 'dark' : 'light';
+    if (typeof document === 'undefined') return;
+    document.documentElement.dataset.theme = darkMode ? 'dark' : 'light';
     localStorage.setItem('notes-theme', darkMode ? 'dark' : 'light');
   }
 
@@ -186,7 +189,7 @@
     {/if}
   </main>
 
-  <Dock active={activeView} on:select={(event) => (activeView = event.detail.id)} />
+  <Dock active={activeView} on:select={(event) => (activeView = event.detail.id)} on:create={makeFreshNote} />
 </div>
 
 <style>
