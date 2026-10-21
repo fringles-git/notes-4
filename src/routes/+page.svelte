@@ -3,7 +3,7 @@
   import Button from '$lib/components/Button.svelte';
   import Dock from '$lib/components/Dock.svelte';
   import NoteCard from '$lib/components/NoteCard.svelte';
-  import { addNote, createNote, deleteNote, notes, sortNotes, togglePin, updateNote, type Note } from '$lib/stores/notes';
+  import { addNote, deleteNote, notes, sortNotes, togglePin, updateNote, type Note } from '$lib/stores/notes';
 
   let selectedId: string | null = 'note-1';
 
@@ -18,12 +18,13 @@
 
   function updateSelectedNote(field: 'title' | 'body', value: string): void {
     if (!selectedId) return;
-    const current = $notes.find((note) => note.id === selectedId);
-    if (!current) return;
     updateNote(selectedId, { [field]: value });
   }
 
   $: orderedNotes = sortNotes($notes);
+  $: if (selectedId && !orderedNotes.some((note) => note.id === selectedId)) {
+    selectedId = orderedNotes[0]?.id ?? null;
+  }
   $: selectedNote = orderedNotes.find((note) => note.id === selectedId) ?? orderedNotes[0] ?? null;
 
   function selectNote(note: Note): void {

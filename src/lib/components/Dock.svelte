@@ -1,55 +1,86 @@
 <script lang="ts">
-  export let variant: 'primary' | 'ghost' | 'danger' = 'primary';
-  export let type: 'button' | 'submit' = 'button';
-  export let compact = false;
+  export let active: 'notes' | 'library' | 'search' | 'settings' = 'notes';
+
+  const items = [
+    { id: 'notes', label: 'Notes' },
+    { id: 'library', label: 'Library' },
+    { id: 'search', label: 'Search' },
+    { id: 'settings', label: 'Settings' }
+  ] as const;
 </script>
 
-<button class="button {variant}" class:compact {type} on:click>
-  <slot />
-</button>
+<nav class="dock" aria-label="Main navigation">
+  <div class="dock-shell">
+    {#each items as item}
+      <button class:active={active === item.id} class="dock-item" type="button">
+        <span>{item.label}</span>
+      </button>
+    {/each}
+  </div>
+  <button class="fab" type="button" aria-label="Create note">+</button>
+</nav>
 
 <style>
-  .button {
-    display: inline-flex;
+  .dock {
+    position: fixed;
+    left: 50%;
+    bottom: max(16px, env(safe-area-inset-bottom));
+    transform: translateX(-50%);
+    z-index: 20;
+    display: flex;
     align-items: center;
-    justify-content: center;
-    gap: var(--space-2);
-    min-height: 40px;
-    padding: 0 16px;
+    gap: 12px;
+    width: min(92vw, 560px);
+    pointer-events: none;
+  }
+
+  .dock-shell,
+  .fab {
+    pointer-events: auto;
+  }
+
+  .dock-shell {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    min-width: 0;
+    padding: 4px;
+    border-radius: var(--radius-lg);
+    background: rgba(255, 255, 255, 0.55);
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow-1);
+    backdrop-filter: blur(18px);
+  }
+
+  .dock-item {
+    flex: 1 1 0;
+    min-width: 0;
+    height: var(--dock-height);
     border-radius: var(--radius-sm);
+    color: var(--text-soft);
     font-weight: 700;
-    transition: transform var(--duration-fast) var(--ease), background var(--duration-fast) var(--ease);
+    background: transparent;
+    transition: background var(--duration-base) var(--ease), color var(--duration-base) var(--ease);
     cursor: pointer;
   }
 
-  .button:hover {
-    transform: translateY(-1px);
-  }
-
-  .button:active {
-    transform: translateY(0);
-  }
-
-  .button.primary {
-    background: var(--accent);
-    color: var(--accent-ink);
+  .dock-item.active {
+    background: var(--bg-elevated);
+    color: var(--text);
     box-shadow: var(--shadow-1);
   }
 
-  .button.ghost {
-    background: var(--card-muted);
-    color: var(--text);
-    border: 1px solid var(--line);
-  }
-
-  .button.danger {
-    background: rgba(217, 45, 32, 0.08);
-    color: var(--danger);
-  }
-
-  .button.compact {
-    min-height: 34px;
-    padding: 0 12px;
-    font-size: 0.88rem;
+  .fab {
+    display: grid;
+    place-items: center;
+    width: var(--fab-size);
+    height: var(--fab-size);
+    border-radius: var(--radius-lg);
+    background: var(--accent);
+    color: var(--accent-ink);
+    font-size: 2rem;
+    font-weight: 700;
+    box-shadow: var(--shadow-2);
+    cursor: pointer;
   }
 </style>

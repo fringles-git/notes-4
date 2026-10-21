@@ -1,93 +1,55 @@
-import { writable } from 'svelte/store';
+<script lang="ts">
+  export let variant: 'primary' | 'ghost' | 'danger' = 'primary';
+  export let type: 'button' | 'submit' = 'button';
+  export let compact = false;
+</script>
 
-export type Note = {
-  id: string;
-  title: string;
-  body: string;
-  folder: string;
-  pinned: boolean;
-  createdAt: number;
-  updatedAt: number;
-};
+<button class="button {variant}" class:compact {type} on:click>
+  <slot />
+</button>
 
-const storageKey = 'notes-4-state';
-
-const seedNotes: Note[] = [
-  {
-    id: 'note-1',
-    title: 'Refactor the dock',
-    body: 'Use one dock primitive. Remove tiny feature-specific overrides and keep all buttons aligned to the same spacing and radius scale.',
-    folder: 'Product',
-    pinned: true,
-    createdAt: Date.now() - 1000 * 60 * 60 * 5,
-    updatedAt: Date.now() - 1000 * 60 * 30
-  },
-  {
-    id: 'note-2',
-    title: 'Design tokens',
-    body: 'Define border radius, spacing, color, shadows, typography once. Let every component read from the same variables.',
-    folder: 'System',
-    pinned: false,
-    createdAt: Date.now() - 1000 * 60 * 70,
-    updatedAt: Date.now() - 1000 * 60 * 15
-  }
-];
-
-function loadInitialNotes(): Note[] {
-  if (typeof window === 'undefined') {
-    return seedNotes;
+<style>
+  .button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    min-height: 40px;
+    padding: 0 16px;
+    border-radius: var(--radius-sm);
+    font-weight: 700;
+    transition: transform var(--duration-fast) var(--ease), background var(--duration-fast) var(--ease);
+    cursor: pointer;
   }
 
-  try {
-    const raw = window.localStorage.getItem(storageKey);
-    if (!raw) return seedNotes;
-    const parsed = JSON.parse(raw) as Note[];
-    return parsed.length ? parsed : seedNotes;
-  } catch {
-    return seedNotes;
+  .button:hover {
+    transform: translateY(-1px);
   }
-}
 
-export const notes = writable<Note[]>(loadInitialNotes());
-
-notes.subscribe((value) => {
-  if (typeof window !== 'undefined') {
-    window.localStorage.setItem(storageKey, JSON.stringify(value));
+  .button:active {
+    transform: translateY(0);
   }
-});
 
-export function createNote(input: Partial<Note> = {}): Note {
-  const now = Date.now();
-  return {
-    id: input.id ?? `note-${now}`,
-    title: input.title ?? 'Untitled note',
-    body: input.body ?? '',
-    folder: input.folder ?? 'Inbox',
-    pinned: input.pinned ?? false,
-    createdAt: input.createdAt ?? now,
-    updatedAt: input.updatedAt ?? now
-  };
-}
+  .button.primary {
+    background: var(--accent);
+    color: var(--accent-ink);
+    box-shadow: var(--shadow-1);
+  }
 
-export function addNote(partial: Partial<Note> = {}): void {
-  notes.update((current) => {
-    const next = createNote(partial);
-    return [next, ...current];
-  });
-}
+  .button.ghost {
+    background: var(--card-muted);
+    color: var(--text);
+    border: 1px solid var(--line);
+  }
 
-export function togglePin(id: string): void {
-  notes.update((current) =>
-    current.map((note) =>
-      note.id === id ? { ...note, pinned: !note.pinned, updatedAt: Date.now() } : note
-    )
-  );
-}
+  .button.danger {
+    background: rgba(217, 45, 32, 0.08);
+    color: var(--danger);
+  }
 
-export function deleteNote(id: string): void {
-  notes.update((current) => current.filter((note) => note.id !== id));
-}
-
-export function sortNotes(list: Note[]): Note[] {
-  return [...list].sort((a, b) => Number(b.pinned) - Number(a.pinned) || b.updatedAt - a.updatedAt);
-}
+  .button.compact {
+    min-height: 34px;
+    padding: 0 12px;
+    font-size: 0.88rem;
+  }
+</style>
