@@ -1,0 +1,19 @@
+{
+  "name": "Notes",
+  "short_name": "Notes",
+  "description": "Une application de notes mobile-first pensée pour une main.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f3f4f6",
+  "theme_color": "#f4c542",
+  "lang": "fr",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

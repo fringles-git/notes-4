@@ -1,67 +1,105 @@
-:root {
-  --bg: #f3f4f6;
-  --bg-elevated: #ffffff;
-  --card: #ffffff;
-  --card-muted: #f8f9fb;
-  --panel: rgba(255, 255, 255, 0.72);
-  --text: #101828;
-  --text-soft: #475467;
-  --line: rgba(16, 24, 40, 0.1);
-  --line-strong: rgba(16, 24, 40, 0.18);
-  --accent: #f6c453;
-  --accent-ink: #20180a;
-  --accent-soft: rgba(246, 196, 83, 0.18);
-  --select: #1d4ed8;
-  --select-soft: rgba(29, 78, 216, 0.12);
-  --danger: #d92d20;
-  --success: #1f8a5d;
-  --shadow-1: 0 1px 2px rgba(15, 23, 42, 0.08);
-  --shadow-2: 0 12px 28px rgba(15, 23, 42, 0.12);
-  --radius-xs: 8px;
-  --radius-sm: 12px;
-  --radius-md: 18px;
-  --radius-lg: 24px;
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-5: 20px;
-  --space-6: 24px;
-  --space-7: 32px;
-  --dock-height: 52px;
-  --fab-size: 60px;
-  --panel-max: 760px;
-  --font-ui: Inter, "Segoe UI", sans-serif;
-  --font-display: "Inter", "Segoe UI", sans-serif;
-  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
-  --duration-fast: 120ms;
-  --duration-base: 220ms;
-}
+<script lang="ts">
+  import { createEventDispatcher } from 'svelte';
 
-:root {
-  color: var(--text);
-  background: var(--bg);
-  font-family: var(--font-ui);
-  line-height: 1.5;
-  font-weight: 500;
-}
+  export let active: 'notes' | 'library' | 'search' | 'settings' = 'notes';
 
-html, body {
-  margin: 0;
-  min-height: 100%;
-  background: var(--bg);
-  color: var(--text);
-}
+  const dispatch = createEventDispatcher();
 
-body {
-  min-height: 100vh;
-}
+  const items = [
+    { id: 'notes', label: 'Notes' },
+    { id: 'library', label: 'Bibliothèque' },
+    { id: 'search', label: 'Recherche' },
+    { id: 'settings', label: 'Réglages' }
+  ] as const;
 
-button, input, textarea {
-  font: inherit;
-}
+  function handleSelect(itemId: (typeof items)[number]['id']): void {
+    dispatch('select', { id: itemId });
+  }
 
-a {
-  color: inherit;
-  text-decoration: none;
-}
+  function handleCreate(): void {
+    dispatch('create');
+  }
+</script>
+
+<nav class="dock" aria-label="Navigation principale">
+  <div class="dock-shell">
+    {#each items as item}
+      <button
+        class:active={active === item.id}
+        class="dock-item"
+        type="button"
+        aria-current={active === item.id ? 'page' : undefined}
+        on:click={() => handleSelect(item.id)}
+      >
+        <span>{item.label}</span>
+      </button>
+    {/each}
+  </div>
+  <button class="fab" type="button" aria-label="Créer une note" on:click={handleCreate}>+</button>
+</nav>
+
+<style>
+  .dock {
+    position: fixed;
+    left: 50%;
+    bottom: max(16px, env(safe-area-inset-bottom));
+    transform: translateX(-50%);
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: min(92vw, 560px);
+    pointer-events: none;
+  }
+
+  .dock-shell,
+  .fab {
+    pointer-events: auto;
+  }
+
+  .dock-shell {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    min-width: 0;
+    padding: 4px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.62);
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow-1);
+    backdrop-filter: blur(18px);
+  }
+
+  .dock-item {
+    flex: 1 1 0;
+    min-width: 0;
+    height: var(--dock-height);
+    border-radius: 16px;
+    color: var(--text-soft);
+    font-weight: 700;
+    background: transparent;
+    transition: background var(--duration-base) var(--ease), color var(--duration-base) var(--ease), transform var(--duration-fast) var(--ease);
+    cursor: pointer;
+    font-size: 0.78rem;
+  }
+
+  .dock-item.active {
+    background: var(--bg-elevated);
+    color: var(--text);
+    box-shadow: var(--shadow-1);
+  }
+
+  .fab {
+    display: grid;
+    place-items: center;
+    width: var(--fab-size);
+    height: var(--fab-size);
+    border-radius: 20px;
+    background: var(--accent);
+    color: var(--accent-ink);
+    font-size: 2rem;
+    font-weight: 700;
+    box-shadow: var(--shadow-2);
+    cursor: pointer;
+  }
+</style>
