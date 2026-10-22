@@ -1,53 +1,14 @@
-@import '$lib/styles/tokens.css';
+<script lang="ts">
+  import '#lib/styles/base.css';
+  import { onMount } from 'svelte';
 
-:root {
-  color-scheme: light;
-}
+  onMount(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker
+        .register('/service-worker.js')
+        .catch((error) => console.warn('Service worker registration failed', error));
+    }
+  });
+</script>
 
-:root[data-theme='dark'] {
-  color-scheme: dark;
-}
-
-html {
-  background: var(--bg);
-}
-
-body {
-  margin: 0;
-  background:
-    radial-gradient(circle at top left, rgba(244, 197, 66, 0.14), transparent 26%),
-    linear-gradient(180deg, #f8f9fb 0%, var(--bg) 100%);
-}
-
-:root[data-theme='dark'] body {
-  background:
-    radial-gradient(circle at top left, rgba(244, 197, 66, 0.12), transparent 26%),
-    linear-gradient(180deg, #0d1424 0%, var(--bg) 100%);
-}
-
-* {
-  box-sizing: border-box;
-}
-
-button,
-input,
-textarea {
-  font: inherit;
-  color: inherit;
-}
-
-button {
-  border: 0;
-  background: none;
-  padding: 0;
-}
-
-img {
-  max-width: 100%;
-  display: block;
-}
-
-:focus-visible {
-  outline: 2px solid var(--select);
-  outline-offset: 2px;
-}
+<slot />
